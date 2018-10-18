@@ -239,7 +239,7 @@ def main():
     state_shadow = None
     next_state_shadow = None
     runtime_dir = '/home/csairmind/runtime/RLStudy/gxnk/c6'
-    pretrain_model = '/home/csairmind/runtime/RLStudy/gxnk/c6/models'
+    pretrain_model = None
 
     agent = DQN(env, '%s/%s' % (runtime_dir, 'log'), pretrain_model)
     total_reward_decade = 0
