@@ -1,4 +1,3 @@
-import sys
 import cv2
 import gym
 import tensorflow as tf
@@ -25,7 +24,7 @@ STEP = 1500
 TEST = 10
 
 
-class ImageProcess():
+class ImageProcess:
     def ColorMat2B(self, state):  # this is the function used for the game flappy bird
         height = 80
         width = 80
@@ -79,8 +78,8 @@ class ImageProcess():
         cv2.imshow(str(p + 4), imgs[3])
 
 
-class DQN():
-    def __init__(self, env, log_dir):
+class DQN:
+    def __init__(self, env, log_dir, pretrain_model):
         self.imageProcess = ImageProcess()
         self.epsilon = INITIAL_EPSILON
         self.replay_buffer = deque()
@@ -95,12 +94,15 @@ class DQN():
         self.observe_time = 0
 
         self.merged = tf.summary.merge_all()
+        self.model_saver = tf.train.Saver(max_to_keep=5)
         self.summary_writer = tf.summary.FileWriter(log_dir, self.session.graph)
 
         self.session.run(tf.initialize_all_variables())
+        if pretrain_model is not None:
+            print('Restoring pretrained model: %s' % pretrain_model)
+            self.model_saver.restore(self.session, tf.train.latest_checkpoint(pretrain_model))
 
     def create_network(self):
-
         INPUT_DEPTH = SERIES_LENGTH
 
         self.input_layer = tf.placeholder(tf.float32, [None, CNN_INPUT_WIDTH, CNN_INPUT_HEIGHT, INPUT_DEPTH],
@@ -236,9 +238,10 @@ def main():
     env = gym.make(ENV_NAME)
     state_shadow = None
     next_state_shadow = None
-    log_dir = '~/log/RLStudy/gxnk/c6'
+    runtime_dir = '/home/csairmind/runtime/RLStudy/gxnk/c6'
+    pretrain_model = '/home/csairmind/runtime/RLStudy/gxnk/c6/models'
 
-    agent = DQN(env, log_dir)
+    agent = DQN(env, '%s/%s' % (runtime_dir, 'log'), pretrain_model)
     total_reward_decade = 0
 
     # game_state = game.GameState()
@@ -269,9 +272,12 @@ def main():
             if done:
                 break
         print('Episode:', episode, 'Total Point this Episode is:', total_reward)
+
         total_reward_decade += total_reward
         if episode % 10 == 0:
             print('-------------')
+            print('Saving model')
+            agent.model_saver.save(agent.session, '%s/%s/%s' % (runtime_dir, 'models', 'model'), global_step=episode)
             print('Decade:', episode / 10, 'Total Reward in this Decade is:', total_reward_decade)
             print('-------------')
             total_reward_decade = 0
